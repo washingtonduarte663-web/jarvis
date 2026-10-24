@@ -1,11 +1,12 @@
 name: jarvis
-description: JARVIS SHIRO COMPLETO - Washington
+description: JARVIS MARK 3 MOVIE EDITION - Washington Duarte
 publish_to: 'none'
-version: 2.0.0+1
+version: 3.0.0+1
 environment:
   sdk: '>=3.0.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
+  flutter_tts: ^4.0.2
 flutter:
   uses-material-design: true
