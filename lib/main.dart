@@ -53,7 +53,8 @@ class _JarvisShiroState extends State<JarvisShiro> {
   processarComando(String texto){
     input.text = texto;
     enviarMensagem();
-  }  enviarMensagem(){
+  }
+    enviarMensagem(){
     String txt = input.text.trim();
     if(txt.isEmpty) return;
     setState((){
