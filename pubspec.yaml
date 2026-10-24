@@ -1,12 +1,13 @@
 name: jarvis
-description: JARVIS MARK 4 AI - Washington
+description: JARVIS MARK 3.0 REACTOR ARC - Washington
 publish_to: 'none'
-version: 4.0.0+1
+version: 3.0.0+3
 environment:
   sdk: '>=3.0.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
+  flutter_tts: ^4.0.2
 flutter:
   uses-material-design: true
