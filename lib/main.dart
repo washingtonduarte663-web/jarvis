@@ -4,154 +4,109 @@ import 'dart:convert';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:math' as math;
 
-void main() => runApp(MaterialApp(debugShowCheckedModeBanner: false, home: JarvisReactor()));
+void main() => runApp(MaterialApp(debugShowCheckedModeBanner: false, home: ReactorApp()));
 
-class JarvisReactor extends StatefulWidget {
-  @override State<JarvisReactor> createState() => _ReactorState();
+class ReactorApp extends StatefulWidget {
+  @override State<ReactorApp> createState() => _ReactorState();
 }
-class _ReactorState extends State<JarvisReactor> with TickerProviderStateMixin {
-  int aba=0; bool isFriday=false;
+class _ReactorState extends State<ReactorApp> with TickerProviderStateMixin {
+  int aba=0;
   final input=TextEditingController();
   final apiKeyController=TextEditingController();
-  String apiKey=""; bool iaAtiva=false; bool carregando=false;
-  List<Map<String,String>> chat=[{"user":"Iniciar REACTOR ARC","jarvis":"MARK 3.0 REACTOR ARC Online! Núcleo de energia ativado Washington!"}];
-  String placa="Arduino Uno"; String comp="LED"; String codigo="";
-  List<Map<String,dynamic>> dispositivos=[
-    {"nome":"TV Sala","icon": Icons.tv,"conectado":false},
-    {"nome":"Watch","icon": Icons.watch,"conectado":true},
-    {"nome":"Lâmpada","icon": Icons.lightbulb,"conectado":false},
-  ];
-  late AnimationController core; late AnimationController ring1; late AnimationController ring2;
+  String apiKey=""; bool iaAtiva=false; bool loading=false;
+  List<Map<String,String>> chat=[{"u":"Reator","j":"REATOR ARC AZUL MARK 3.0 Online! Núcleo azul ativado Washington!"}];
+  String placa="【entity-Arduino¦canonical_name=ARDUINO】 Uno";
+  late AnimationController core;
+  late AnimationController ring;
   FlutterTts tts=FlutterTts();
+
   @override void initState(){
     super.initState();
-    core=AnimationController(vsync: this, duration: Duration(milliseconds: 800))..repeat(reverse: true);
-    ring1=AnimationController(vsync: this, duration: Duration(seconds: 3))..repeat();
-    ring2=AnimationController(vsync: this, duration: Duration(seconds: 6))..repeat();
-    initTts();
+    core=AnimationController(vsync: this, duration: Duration(milliseconds: 900))..repeat(reverse: true);
+    ring=AnimationController(vsync: this, duration: Duration(seconds: 4))..repeat();
+    tts.setLanguage("pt-BR");
+    tts.setSpeechRate(0.45);
   }
-  initTts() async { await tts.setLanguage(isFriday?"en-US":"pt-BR"); await tts.setSpeechRate(0.46); await tts.setPitch(0.82); }
-  falar(String txt) async { String limpo=txt.replaceAll(RegExp(r'[^\w\s.,!?áéíóúãõç]'), ''); if(limpo.length>250) limpo=limpo.substring(0,250); await tts.speak(limpo); }
-  Future<void> perguntarIA(String p) async {
-    if(apiKey.isEmpty){ String r="⚠️ Cole a chave AIzaSy... na aba REACTOR SETUP para ativar IA!"; setState(()=> chat.add({"user":p,"jarvis":r})); falar(r); return; }
-    setState(()=> carregando=true);
-    setState(()=> chat.add({"user":p,"jarvis":"..."}));
+  falar(String t) async { if(t.length>250) t=t.substring(0,250); await tts.speak(t); }
+  Future<void> perguntar(String p) async {
+    if(apiKey.isEmpty){ setState(()=> chat.add({"u":p,"j":"Cole a chave AIzaSy na aba SETUP"})); return; }
+    setState(()=> loading=true);
+    setState(()=> chat.add({"u":p,"j":"..."}));
     try{
       var url=Uri.parse("https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key=$apiKey");
-      var body=jsonEncode({"contents":[{"parts":[{"text":"Você é JARVIS MARK 3.0 REACTOR ARC do Washington, responda curto PT-BR. Pergunta: $p"}]}]});
+      var body=jsonEncode({"contents":[{"parts":[{"text":"JARVIS MARK 3.0 REATOR AZUL: $p"}]}]});
       var res=await http.post(url, headers: {"Content-Type":"application/json"}, body: body);
-      String resp=res.statusCode==200 ? jsonDecode(res.body)["candidates"][0]["content"]["parts"][0]["text"] : "Modo offline REACTOR: Entendi '$p'! Núcleo de energia estável!";
-      setState(()=> chat.last["jarvis"]=resp); falar(resp);
-    } catch(e){ setState(()=> chat.last["jarvis"]="REACTOR ARC Offline: '$p' registrado!"); }
-    setState(()=> carregando=false);
+      String r = res.statusCode==200 ? jsonDecode(res.body)["candidates"][0]["content"]["parts"][0]["text"] : "Offline AZUL: $p registrado!";
+      setState(()=> chat.last["j"]=r); falar(r);
+    } catch(e){ setState(()=> chat.last["j"]="Offline AZUL: $p"); }
+    setState(()=> loading=false);
   }
-  void enviar(){ String t=input.text.trim(); if(t.isEmpty) return; input.clear(); perguntarIA(t); }
-    @override Widget build(BuildContext context){
-    return Scaffold(backgroundColor: Colors.black, body: Stack(children:[
-      // FUNDO REATOR ARC
-      Positioned.fill(child: CustomPaint(painter: ReactorArcPainter(core, ring1, ring2))),
-      // CONTEÚDO
+  void enviar(){ var t=input.text.trim(); if(t.isEmpty) return; input.clear(); perguntar(t); }
+
+  @override Widget build(BuildContext context){
+    return Scaffold(backgroundColor: Color(0xFF020A1A), body: Stack(children:[
+      Positioned.fill(child: AnimatedBuilder(animation: Listenable.merge([core,ring]), builder: (c,ch){ return CustomPaint(painter: ArcPainter(core.value, ring.value)); })),
       Column(children:[
         Container(height:70, padding: EdgeInsets.only(top:32, left:12, right:12), child: Row(children:[
-          AnimatedBuilder(animation: core, builder: (c,child){ return Container(width:28, height:28, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.cyanAccent.withOpacity(0.3+core.value*0.7), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.8), blurRadius: 15+core.value*10)])), child: Icon(Icons.bolt, size:16, color: Colors.white)); }),
+          AnimatedBuilder(animation: core, builder: (c,ch)=> Container(width:32, height:32, decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0066FF).withOpacity(0.5+core.value*0.5), boxShadow: [BoxShadow(color: Color(0xFF0066FF), blurRadius: 18+core.value*12), BoxShadow(color: Colors.blueAccent, blurRadius: 30)]), child: Icon(Icons.bolt, size:18, color: Colors.white))),
           SizedBox(width:10),
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children:[Text("REACTOR ARC", style: TextStyle(color: Colors.cyanAccent, letterSpacing:5, fontWeight: FontWeight.bold, fontSize:14, shadows: [Shadow(color: Colors.cyanAccent, blurRadius: 15)])), Text("MARK 3.0 - Washington", style: TextStyle(color: Colors.white38, fontSize:8, letterSpacing:2))]),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children:[Text("MARK 3.0", style: TextStyle(color: Color(0xFF2A8DFF), letterSpacing:5, fontWeight: FontWeight.bold, fontSize:16, shadows: [Shadow(color: Color(0xFF0066FF), blurRadius: 15)])), Text("REACTOR ARC AZUL", style: TextStyle(color: Color(0xFF2A8DFF), fontSize:8, letterSpacing:3))]),
           Spacer(),
-          GestureDetector(onTap: (){ setState(()=> aba=3); }, child: Container(padding: EdgeInsets.symmetric(horizontal:10, vertical:6), decoration: BoxDecoration(border: Border.all(color: Colors.cyanAccent), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.4), blurRadius: 10)]), child: Text(iaAtiva? "IA ON":"SETUP IA", style: TextStyle(color: Colors.cyanAccent, fontSize:9)))),
+          Container(padding: EdgeInsets.symmetric(horizontal:10, vertical:5), decoration: BoxDecoration(border: Border.all(color: Color(0xFF2A8DFF)), borderRadius: BorderRadius.circular(20), boxShadow: [BoxShadow(color: Color(0xFF0066FF).withOpacity(0.5), blurRadius: 10)]), child: Text(iaAtiva? "AZUL ON":"SETUP", style: TextStyle(color: Color(0xFF2A8DFF), fontSize:9, fontWeight: FontWeight.bold))),
         ])),
-        Expanded(child: _conteudo()),
-        if(carregando) LinearProgressIndicator(color: Colors.cyanAccent, backgroundColor: Colors.transparent),
-        // CONTROLES EM ARCO (igual reator)
-        Container(height:90, child: Stack(children:[
-          Center(child: AnimatedBuilder(animation: core, builder: (c,ch){ return Container(width:90+core.value*10, height:90+core.value*10, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.cyanAccent.withOpacity(0.2)), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.15), blurRadius: 20)])); })),
-          Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children:[
-            _arcButton(Icons.chat_bubble, "JARVIS", 0),
-            _arcButton(Icons.developer_board, "ARDUINO", 1),
-            _reactorCenter(),
-            _arcButton(Icons.wifi, "IoT", 2),
-            _arcButton(Icons.settings, "SETUP", 3),
-          ]),
+        Expanded(child: aba==0 ? chatTab() : aba==1 ? arduinoTab() : setupTab()),
+        if(loading) LinearProgressIndicator(color: Color(0xFF0066FF), backgroundColor: Colors.transparent),
+        Container(height:88, child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children:[
+          _btn(Icons.chat, "JARVIS", 0),
+          _btn(Icons.developer_board, "【entity-ARDUINO¦canonical_name=ARDUINO】", 1),
+          _center(),
+          _btn(Icons.wifi, "IoT", 2),
+          _btn(Icons.settings, "SETUP", 3),
         ])),
         Container(padding: EdgeInsets.all(8), color: Colors.black.withOpacity(0.6), child: Row(children:[
-          Expanded(child: Container(decoration: BoxDecoration(color: Color(0xFF0A1629), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.cyanAccent.withOpacity(0.3))), child: TextField(controller: input, style: TextStyle(color: Colors.white, fontSize:13), decoration: InputDecoration(hintText: "Comando para o REACTOR ARC...", hintStyle: TextStyle(color: Colors.white24, fontSize:11), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal:16, vertical:12)), onSubmitted: (_)=> enviar()))),
+          Expanded(child: TextField(controller: input, style: TextStyle(color: Colors.white), decoration: InputDecoration(hintText: "Comando REATOR AZUL...", hintStyle: TextStyle(color: Colors.white24, fontSize:11), filled: true, fillColor: Color(0xFF061530), border: OutlineInputBorder(borderRadius: BorderRadius.circular(24), borderSide: BorderSide(color: Color(0xFF0066FF).withOpacity(0.3)))), onSubmitted: (_)=> enviar())),
           SizedBox(width:8),
-          GestureDetector(onTap: enviar, child: AnimatedBuilder(animation: core, builder: (c,ch){ return Container(width:48, height:48, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [Colors.cyanAccent, Colors.blueAccent]), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.6+core.value*0.4), blurRadius: 12+core.value*8)]), child: Icon(Icons.send, color: Colors.black, size:20)); })),
+          FloatingActionButton(mini: true, backgroundColor: Color(0xFF0066FF), onPressed: enviar, child: Icon(Icons.send, color: Colors.white)),
         ])),
       ]),
     ]));
   }
-  Widget _conteudo(){
-    if(aba==0) return ListView.builder(padding: EdgeInsets.all(12), itemCount: chat.length, itemBuilder: (c,i)=> Column(children:[
-      Align(alignment: Alignment.centerRight, child: Container(margin: EdgeInsets.symmetric(vertical:4), padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.8), borderRadius: BorderRadius.circular(14)), child: Text(chat[i]["user"]!, style: TextStyle(color: Colors.white, fontSize:12)))),
-      Align(alignment: Alignment.centerLeft, child: GestureDetector(onTap: ()=> falar(chat[i]["jarvis"]!), child: Container(margin: EdgeInsets.symmetric(vertical:4), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Color(0xFF0A1C36).withOpacity(0.9), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.cyanAccent.withOpacity(0.4)), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.15), blurRadius: 10)]), child: Row(children:[Icon(Icons.volume_up, size:12, color: Colors.cyanAccent), SizedBox(width:6), Expanded(child: Text(chat[i]["jarvis"]!, style: TextStyle(color: Colors.cyanAccent, fontSize:11)))])))),
-    ]));
-    if(aba==1) return ListView(padding: EdgeInsets.all(16), children:[
-      Center(child: AnimatedBuilder(animation: core, builder: (c,ch){ return Container(width:120, height:120, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.cyanAccent, width:2), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.6), blurRadius: 20+core.value*10)]), child: Stack(children:[Center(child: Container(width:40+core.value*10, height:40+core.value*10, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.cyanAccent, boxShadow: [BoxShadow(color: Colors.cyanAccent, blurRadius: 20)]))), RotationTransition(turns: ring1, child: CustomPaint(size: Size(120,120), painter: RingTicksPainter()))])); })),
-      SizedBox(height:16),
-      Text("ARDUINO LAB - REACTOR", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
-      DropdownButton<String>(value: placa, isExpanded: true, dropdownColor: Color(0xFF0A1629), style: TextStyle(color: Colors.white), items: ["Arduino Uno","ESP32","ESP8266"].map((e)=> DropdownMenuItem(value:e, child: Text(e))).toList(), onChanged: (v)=> setState(()=> placa=v!)),
-      ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent), onPressed: (){ codigo="// REACTOR ARC - $placa\nvoid setup(){ pinMode(13, OUTPUT); }\nvoid loop(){ digitalWrite(13, HIGH); delay(500); digitalWrite(13, LOW); delay(500); }"; setState((){}); falar("Código gerado"); }, child: Text("GERAR CÓDIGO", style: TextStyle(color: Colors.black))),
-      if(codigo.isNotEmpty) Container(margin: EdgeInsets.only(top:10), padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.black, border: Border.all(color: Colors.cyanAccent)), child: SelectableText(codigo, style: TextStyle(color: Colors.greenAccent, fontSize:10))),
-    ]);
-    if(aba==2) return ListView(padding: EdgeInsets.all(16), children: dispositivos.map((d)=> ListTile(leading: Icon(d["icon"], color: Colors.cyanAccent), title: Text(d["nome"], style: TextStyle(color: Colors.white, fontSize:12)), trailing: Switch(value: d["conectado"], activeColor: Colors.cyanAccent, onChanged: (v){ setState(()=> d["conectado"]=v); falar("${d["nome"]} ${v? "conectado":"desconectado}"); }))).toList());
-    return ListView(padding: EdgeInsets.all(16), children:[
-      Text("REACTOR ARC SETUP - MARK 3.0", style: TextStyle(color: Colors.cyanAccent, fontWeight: FontWeight.bold)),
-      SizedBox(height:12),
-      TextField(controller: apiKeyController, style: TextStyle(color: Colors.white), decoration: InputDecoration(labelText: "API Key AIzaSy...", filled: true, fillColor: Color(0xFF0A1629), border: OutlineInputBorder()), onChanged: (v)=> apiKey=v),
-      SizedBox(height:12),
-      ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent, padding: EdgeInsets.all(14)), onPressed: (){ setState(()=> apiKey=apiKeyController.text.trim()); setState(()=> iaAtiva=apiKey.isNotEmpty); falar(iaAtiva? "Reactor ARC e IA ativados Washington":"Cole a chave"); setState(()=> aba=0); }, child: Text("ATIVAR REACTOR ARC", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold))),
-    ]);
-  }
-  Widget _arcButton(IconData icon, String label, int idx){
-    bool sel=aba==idx;
-    return GestureDetector(onTap: ()=> setState(()=> aba=idx), child: Column(children:[
-      Container(width:48, height:48, decoration: BoxDecoration(shape: BoxShape.circle, color: sel? Colors.cyanAccent: Color(0xFF0A1629), border: Border.all(color: Colors.cyanAccent.withOpacity(sel?1:0.3)), boxShadow: sel? [BoxShadow(color: Colors.cyanAccent.withOpacity(0.6), blurRadius: 12)]:[]), child: Icon(icon, color: sel? Colors.black: Colors.cyanAccent, size:20)),
-      SizedBox(height:4),
-      Text(label, style: TextStyle(color: sel? Colors.cyanAccent: Colors.white38, fontSize:7)),
-    ]));
-  }
-  Widget _reactorCenter(){
-    return AnimatedBuilder(animation: Listenable.merge([core, ring1]), builder: (c,ch){
-      return Container(width:60, height:60, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [Colors.cyanAccent.withOpacity(0.9), Colors.blueAccent.withOpacity(0.6), Colors.black]), boxShadow: [BoxShadow(color: Colors.cyanAccent.withOpacity(0.8), blurRadius: 20+core.value*15)]), child: RotationTransition(turns: ring1, child: Icon(Icons.bolt, color: Colors.white, size:28)));
-    });
-  }
+  Widget chatTab()=> ListView.builder(padding: EdgeInsets.all(12), itemCount: chat.length, itemBuilder: (c,i)=> Column(children:[
+    Align(alignment: Alignment.centerRight, child: Container(margin: EdgeInsets.symmetric(vertical:4), padding: EdgeInsets.all(10), decoration: BoxDecoration(gradient: LinearGradient(colors: [Color(0xFF0066FF), Color(0xFF2A8DFF)]), borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Color(0xFF0066FF).withOpacity(0.4), blurRadius: 8)]), child: Text(chat[i]["u"]!, style: TextStyle(color: Colors.white, fontSize:12)))),
+    Align(alignment: Alignment.centerLeft, child: GestureDetector(onTap: ()=> falar(chat[i]["j"]!), child: Container(margin: EdgeInsets.symmetric(vertical:4), padding: EdgeInsets.all(10), decoration: BoxDecoration(color: Color(0xFF061530), borderRadius: BorderRadius.circular(12), border: Border.all(color: Color(0xFF0066FF).withOpacity(0.6)), boxShadow: [BoxShadow(color: Color(0xFF0066FF).withOpacity(0.2), blurRadius: 12)]), child: Text(chat[i]["j"]!, style: TextStyle(color: Color(0xFF2A8DFF), fontSize:11, shadows: [Shadow(color: Color(0xFF0066FF), blurRadius: 8)]))))),
+  ]));
+  Widget arduinoTab()=> ListView(padding: EdgeInsets.all(16), children:[
+    Center(child: AnimatedBuilder(animation: core, builder: (c,ch)=> Container(width:100, height:100, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Color(0xFF0066FF), width:2), boxShadow: [BoxShadow(color: Color(0xFF0066FF), blurRadius: 25+core.value*15)]), child: Center(child: Container(width:40+core.value*15, height:40+core.value*15, decoration: BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0066FF), boxShadow: [BoxShadow(color: Color(0xFF0066FF), blurRadius: 20)])))))),
+    SizedBox(height:16),
+    Text(" ARDUINO - REATOR AZUL", style: TextStyle(color: Color(0xFF2A8DFF), fontWeight: FontWeight.bold)),
+    DropdownButton<String>(value: placa, isExpanded: true, dropdownColor: Color(0xFF061530), style: TextStyle(color: Colors.white), items: ["Arduino Uno","ESP32","ESP8266"].map((e)=> DropdownMenuItem(value: e, child: Text(e))).toList(), onChanged: (v){ setState(()=> placa=v!); }),
+    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0066FF), shadowColor: Color(0xFF0066FF), elevation: 12), onPressed: ()=> falar("Código $placa gerado com reator azul"), child: Text("GERAR CÓDIGO AZUL", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+  ]);
+  Widget setupTab()=> ListView(padding: EdgeInsets.all(16), children:[
+    Text("REACTOR AZUL SETUP", style: TextStyle(color: Color(0xFF2A8DFF), fontWeight: FontWeight.bold, shadows: [Shadow(color: Color(0xFF0066FF), blurRadius: 10)])),
+    SizedBox(height:8),
+    TextField(controller: apiKeyController, style: TextStyle(color: Colors.white), decoration: InputDecoration(labelText: "API Key AIzaSy...", labelStyle: TextStyle(color: Colors.white54), filled: true, fillColor: Color(0xFF061530), border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)), enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Color(0xFF0066FF).withOpacity(0.3)))), onChanged: (v)=> apiKey=v),
+    SizedBox(height:12),
+    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Color(0xFF0066FF), padding: EdgeInsets.all(14), shadowColor: Color(0xFF0066FF), elevation: 15), onPressed: (){ setState(()=> apiKey=apiKeyController.text.trim()); setState(()=> iaAtiva=apiKey.isNotEmpty); setState(()=> aba=0); falar("Reator azul ativado Washington"); }, child: Text("ATIVAR REATOR AZUL", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))),
+  ]);
+  Widget _btn(IconData ic, String lb, int id){ bool sel=aba==id; return GestureDetector(onTap: ()=> setState(()=> aba=id), child: Column(children:[Container(width:46, height:46, decoration: BoxDecoration(shape: BoxShape.circle, color: sel? Color(0xFF0066FF): Color(0xFF061530), border: Border.all(color: Color(0xFF0066FF).withOpacity(sel?1:0.4)), boxShadow: sel? [BoxShadow(color: Color(0xFF0066FF), blurRadius: 12)]:[]), child: Icon(ic, color: sel? Colors.white: Color(0xFF2A8DFF), size:20)), SizedBox(height:3), Text(lb, style: TextStyle(color: sel? Color(0xFF2A8DFF): Colors.white38, fontSize:6, fontWeight: FontWeight.bold))])); }
+  Widget _center(){ return AnimatedBuilder(animation: core, builder: (c,ch)=> Container(width:62, height:62, decoration: BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [Color(0xFF2A8DFF), Color(0xFF0066FF), Color(0xFF003399)]), boxShadow: [BoxShadow(color: Color(0xFF0066FF), blurRadius: 20+core.value*15), BoxShadow(color: Colors.blueAccent, blurRadius: 35)]), child: Icon(Icons.bolt, color: Colors.white, size:30, shadows: [Shadow(color: Colors.white, blurRadius: 10)]))); }
 }
 
-class ReactorArcPainter extends CustomPainter {
-  final Animation<double> core, r1, r2;
-  ReactorArcPainter(this.core, this.r1, this.r2): super(repaint: Listenable.merge([core, r1, r2]));
+class ArcPainter extends CustomPainter {
+  final double core, ring;
+  ArcPainter(this.core, this.ring);
   @override void paint(Canvas canvas, Size size){
-    final center=Offset(size.width/2, size.height/2.2);
-    final paint=Paint()..style=PaintingStyle.stroke;
-    // Anéis externos
-    for(int i=0;i<5;i++){
-      paint.color=Colors.cyanAccent.withOpacity(0.08 - i*0.01);
-      paint.strokeWidth=1;
-      canvas.drawCircle(center, 100 + i*60 + r2.value*20, paint);
-    }
-    // Ticks do reator
-    paint.color=Colors.cyanAccent.withOpacity(0.15);
-    paint.strokeWidth=2;
-    for(int i=0;i<24;i++){
-      double angle=(i*15 + r1.value*360)*math.pi/180;
-      double r=180;
-      Offset p1=center + Offset(r*math.cos(angle), r*math.sin(angle));
-      Offset p2=center + Offset((r+10)*math.cos(angle), (r+10)*math.sin(angle));
-      canvas.drawLine(p1, p2, paint);
-    }
-    // Brilho central
-    paint.style=PaintingStyle.fill;
-    paint.color=Colors.cyanAccent.withOpacity(0.04 + core.value*0.06);
-    canvas.drawCircle(center, 250, paint);
+    final center=Offset(size.width/2, size.height/2.3);
+    final p=Paint()..style=PaintingStyle.stroke;
+    for(int i=0;i<5;i++){ p.color=Color(0xFF0066FF).withOpacity(0.08); p.strokeWidth=1; canvas.drawCircle(center, 90+i*65+ring*20, p); }
+    p.color=Color(0xFF2A8DFF).withOpacity(0.25); p.strokeWidth=2;
+    for(int i=0;i<24;i++){ double a=(i*15+ring*360)*math.pi/180; double r=170; canvas.drawLine(center+Offset(r*math.cos(a), r*math.sin(a)), center+Offset((r+12)*math.cos(a), (r+12)*math.sin(a)), p); }
+    p.style=PaintingStyle.fill;
+    p.color=Color(0xFF0066FF).withOpacity(0.05+core*0.08);
+    canvas.drawCircle(center, 280, p);
+    p.color=Color(0xFF2A8DFF).withOpacity(0.08+core*0.05);
+    canvas.drawCircle(center, 180, p);
   }
   @override bool shouldRepaint(old)=> true;
-}
-
-class RingTicksPainter extends CustomPainter {
-  @override void paint(Canvas c, Size s){
-    final center=Offset(s.width/2, s.height/2);
-    final p=Paint()..color=Colors.cyanAccent.withOpacity(0.6)..strokeWidth=2..style=PaintingStyle.stroke;
-    for(int i=0;i<12;i++){ double a=i*30*math.pi/180; c.drawLine(center+Offset(45*math.cos(a),45*math.sin(a)), center+Offset(50*math.cos(a),50*math.sin(a)), p); }
-  }
-  @override bool shouldRepaint(old)=> false;
 }
