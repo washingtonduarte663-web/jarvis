@@ -1,11 +1,14 @@
 name: jarvis
-description: JARVIS v1 - Assistente do Washington
+description: JARVIS SHIRO COMPLETO - Washington
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 environment:
   sdk: '>=3.0.0 <4.0.0'
 dependencies:
   flutter:
     sdk: flutter
+  flutter_tts: ^4.0.2
+  speech_to_text: ^6.6.0
+  shared_preferences: ^2.2.2
 flutter:
   uses-material-design: true
