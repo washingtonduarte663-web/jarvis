@@ -42,10 +42,7 @@ class _IoTState extends State<JarvisIoT> with TickerProviderStateMixin {
   void conectar(int i){ setState(()=> dispositivos[i]["conectado"]=!dispositivos[i]["conectado"]); setState(()=> dispositivos[i]["status"]=dispositivos[i]["conectado"]? "Conectado":"Desconectado"); }
   void escanear(){ setState(()=> scanning=true); Future.delayed(Duration(seconds:2), ()=> setState(()=> scanning=false)); }
   void traduzir(){ String res=tradOrig; if(res.toLowerCase().contains("oi")) res=res.replaceAll(RegExp("oi", caseSensitive: false), "hello"); setState(()=> tradDest=res); }
-  void gerar(){ i
-    
-    
-    f(comp=="LED") codigo="// JARVIS IoT - $placa LED pino $pino\nvoid setup(){ pinMode($pino, OUTPUT); Serial.begin(9600); }\nvoid loop(){ digitalWrite($pino, HIGH); delay(800); digitalWrite($pino, LOW); delay(800); }"; else codigo="// JARVIS - $comp $placa - IoT Ready"; setState((){}); }
+  void gerar(){ if(comp=="LED") codigo="// JARVIS IoT - $placa LED pino $pino\nvoid setup(){ pinMode($pino, OUTPUT); Serial.begin(9600); }\nvoid loop(){ digitalWrite($pino, HIGH); delay(800); digitalWrite($pino, LOW); delay(800); }"; else codigo="// JARVIS - $comp $placa - IoT Ready"; setState((){}); }
     @override Widget build(BuildContext context){
     return Scaffold(backgroundColor: Color(0xFF050A14), body: Stack(children:[
       Positioned.fill(child: CustomPaint(painter: HudPainter(reactor))),
